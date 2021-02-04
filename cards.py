@@ -1,20 +1,24 @@
 #!/usr/bin/env python3
+import sys
 import random
-import pprint
 import copy
 from itertools import cycle
-pp = pprint.PrettyPrinter(indent=4)
 
 FIVE_CARDS = 5
 FIVE_CARD_POKER = FIVE_CARDS
 NUM_OF_CARD_SUITS = 4
 NUM_OF_CARD_VALUES = 13
-
-HANDS_SEQUENTIAL=['Royal Flush', 'Straight Flush', 'Straight']
-HANDS_SAME_SUIT=['Royal Flush', 'Flush']
-
-HANDS_WITHOUT_PAIRS=['High Card', 'Straight', 'Flush', 'Straight Flush', 'Royal Flush']
-HANDS_WITH_PAIRS=['Pair', 'Two Pair', 'Three of a kind', 'Full House', 'Four of a kind']
+poker_hands={\
+            'High Card': 0,
+            'Pair': 0,
+            'Two Pair': 0,
+            '3 of a kind': 0,
+            'Straight': 0,
+            'Flush': 0,
+            'FullHouse': 0,
+            '4 of a kind': 0,
+            'Straight Flush': 0,
+            'Royal Flush': 0}
 
 def sort_cards(cards):
     return copy.deepcopy(sorted(cards, key=lambda x:x['order'], reverse=False))
@@ -71,7 +75,6 @@ def is_hand_same_suit(hand):
 def is_hand_sequential(hand):
     ret = True
     hand = sort_cards(hand)
-    print(hand)
     has_ace = True if hand[0]['card_value'] =='ACE' else False
     card = hand[0]['order']
     for i in range(1,len(hand)):
@@ -103,7 +106,9 @@ def group_cards(hand):
             card = grouped_hand[i]
         else:
             card = grouped_hand[i]
-    return list(filter(lambda x: x!=None, grouped_hand))
+    grouped_cards = list(filter(lambda x: x!=None, grouped_hand))
+    group_len = len(grouped_cards)
+    return group_len, grouped_cards
 
 def get_card_groupings(grouped_cards):
     groupings = []
@@ -112,73 +117,79 @@ def get_card_groupings(grouped_cards):
     groupings.sort()
     return groupings
 
-def print_hand(hand, txt='HAND'):
-    hand = sort_cards(hand)
-    print('The current hand is....')
-    print(f'########{txt}########')
-    for i in range(0,len(hand)):
-        print(f'# {hand[i]["card_value"]}\tof {hand[i]["suit"]}')
-    print(f'########{txt}########')
+def print_hand(hand, txt='HAND', flag=True):
+    if flag:
+        hand = sort_cards(hand)
+        print(f'########{txt}########')
+        for i in range(0,len(hand)):
+            print(f'# {hand[i]["card_value"]}\tof {hand[i]["suit"]}')
+        print(f'########{txt}########')
 
-while True:
+def print_hand_bins(hand_bins, cnt):
+    print(f'########HAND_FREQUENCY########')
+    for hand_label, hand_freq in hand_bins.items():
+        print(f'{hand_label:<15}-->{hand_freq:^10} ({100*hand_freq/cnt:2.2f}%)')
+    print(f'########HAND_FREQUENCY########')
 
-    hand = get_new_hand_from_new_deck()
+if __name__ == '__main__':
 
-    grouped_cards = group_cards(hand)
+    DEBUG = False
+    hand_label = ''
+    iterations = 0
+    num_of_hands = 1_000
 
-    group_len = len(grouped_cards)
+    try:
+        num_of_hands = int(sys.argv[1])
+    except Exception as e:
+        pass
 
+    print(f'Number of poker hand iterations {num_of_hands}. Printing turned {"ON" if DEBUG else "OFF"}')
 
-    # hand = \
-    # [{'order': 8, 'card_value': 'NINE', 'suit': 'DIAMONDS'},
-    # {'order': 9,  'card_value': 'TEN', 'suit': 'DIAMONDS'},
-    # {'order': 10, 'card_value': 'JACK', 'suit': 'DIAMONDS'},
-    # {'order': 11, 'card_value': 'QUEEN', 'suit': 'DIAMONDS'},
-    # {'order': 12, 'card_value': 'KING', 'suit': 'DIAMONDS'}]
+    while iterations < num_of_hands:
 
-    print_hand(hand)
+        iterations+=1
+        hand = get_new_hand_from_new_deck()
+        group_len, grouped_cards = group_cards(hand)
 
-    if group_len == FIVE_CARDS:
+        if group_len == FIVE_CARDS: # no pairs
 
-        print("No pairs...Possible hands: ")
-        print(*HANDS_WITHOUT_PAIRS, sep=', ')
+            is_seq = is_hand_sequential(hand)
+            is_same_suit = is_hand_same_suit(hand)
 
-        is_seq = is_hand_sequential(hand)
-        is_same_suit = is_hand_same_suit(hand)
+            if is_seq and is_same_suit:
 
-        if is_seq and is_same_suit:
+                card_high = get_high_card(hand)['card_value']
+                card_low = get_low_card(hand)['card_value']
 
-            card_high = get_high_card(hand)['card_value']
-            card_low = get_low_card(hand)['card_value']
+                if card_high == 'KING' and card_low == 'ACE':
+                    hand_label = 'Royal Flush'
+                else:
+                    hand_label = 'Straight Flush'
+            elif is_same_suit:
+                hand_label = 'Flush'
+            elif is_seq:
+                hand_label = 'Straight'
+            elif group_len == 5:
+                hand_label = 'High Card'
+        else:
+            if group_len == 4:
+                hand_label = 'Pair'
+            elif group_len == 3:
+                groupings = get_card_groupings(grouped_cards)
+                if groupings == [1,2,2]:
+                    hand_label = 'Two Pair'
+                elif groupings == [1,1,3]:
+                    hand_label = '3 of a kind'
+                else:
+                    assert False
+            elif group_len == 2:
+                groupings = get_card_groupings(grouped_cards)
+                if groupings == [1,4]:
+                    hand_label = '4 of a kind'
+                elif groupings == [2,3]:
+                    hand_label = 'FullHouse'
 
-            if card_high == 'KING' and card_low == 'ACE':
-                print("Royal Flush!")
-                break
+        poker_hands[hand_label]+=1
+        print_hand(hand, txt=hand_label, flag=DEBUG)
 
-            else:
-                print("Straight Flush")
-        elif group_len == 5:
-            print(f'Found {HANDS_WITHOUT_PAIRS[0]}')
-            print_hand(hand, txt='HIGH CARD')
-    else:
-        print("Pairs found...Possible hands: ")
-        print(*HANDS_WITH_PAIRS, sep=', ')
-
-        if group_len == 4:
-            print_hand(hand,'PAIR')
-        elif group_len == 3:
-            groupings = get_card_groupings(grouped_cards)
-            if groupings == [1,2,2]:
-                print_hand(hand,'TWO PAIR')
-            elif groupings == [1,1,3]:
-                print_hand(hand,'3 Of a Kind')
-            else:
-                assert False
-        elif group_len == 2:
-            groupings = get_card_groupings(grouped_cards)
-            if groupings == [1,4]:
-                print_hand(hand,'4 Of a Kind')
-                # break
-            elif groupings == [2,3]:
-                print_hand(hand,'FullHouse')
-                # break
+print_hand_bins(poker_hands, num_of_hands)
