@@ -5,7 +5,13 @@ import copy
 from itertools import cycle
 
 FIVE_CARDS = 5
-FIVE_CARD_POKER = FIVE_CARDS
+FOUR_CARDS = 4
+THREE_CARDS = 3
+TWO_CARDS = 2
+TWO_PAIR_SIGNATURE=[1,2,2]
+THREE_PAIR_SIGNATURE=[1,1,3]
+FOUR_PAIR_SIGNATURE=[1,4]
+TWO_THREE_PAIR_SIGNATURE=[2,3]
 NUM_OF_CARD_SUITS = 4
 NUM_OF_CARD_VALUES = 13
 poker_hands={\
@@ -43,14 +49,14 @@ def shuffle_deck(deck):
     random.shuffle(deck)
     return deck
 
-def draw_from_deck(deck, num_of_cards=FIVE_CARD_POKER):
+def draw_from_deck(deck, num_of_cards=FIVE_CARDS):
     new_hand = []
     for i in range(0,num_of_cards):
         new_hand+=[random.choice(deck)]
         deck.remove(new_hand[i])
     return new_hand
 
-def get_new_hand_from_new_deck(num_of_cards=FIVE_CARD_POKER):
+def get_new_hand_from_new_deck(num_of_cards=FIVE_CARDS):
     deck = build_deck()
     deck = shuffle_deck(deck)
     return draw_from_deck(deck, num_of_cards)
@@ -128,7 +134,7 @@ def print_hand(hand, txt='HAND', flag=True):
 def print_hand_bins(hand_bins, cnt):
     print(f'########HAND_FREQUENCY########')
     for hand_label, hand_freq in hand_bins.items():
-        print(f'{hand_label:<15}-->{hand_freq:^10} ({100*hand_freq/cnt:2.2f}%)')
+        print(f'{hand_label:<15}-->{hand_freq:^10} ({100*hand_freq/cnt:2.6f}%)')
     print(f'########HAND_FREQUENCY########')
 
 if __name__ == '__main__':
@@ -169,25 +175,27 @@ if __name__ == '__main__':
                 hand_label = 'Flush'
             elif is_seq:
                 hand_label = 'Straight'
-            elif group_len == 5:
+            else:
                 hand_label = 'High Card'
         else:
-            if group_len == 4:
+            if group_len == FOUR_CARDS:
                 hand_label = 'Pair'
-            elif group_len == 3:
+            elif group_len == THREE_CARDS:
                 groupings = get_card_groupings(grouped_cards)
-                if groupings == [1,2,2]:
+                if groupings == TWO_PAIR_SIGNATURE:
                     hand_label = 'Two Pair'
-                elif groupings == [1,1,3]:
+                elif groupings == THREE_PAIR_SIGNATURE:
                     hand_label = '3 of a kind'
                 else:
                     assert False
-            elif group_len == 2:
+            elif group_len == TWO_CARDS:
                 groupings = get_card_groupings(grouped_cards)
-                if groupings == [1,4]:
+                if groupings == FOUR_PAIR_SIGNATURE:
                     hand_label = '4 of a kind'
-                elif groupings == [2,3]:
+                elif groupings == TWO_THREE_PAIR_SIGNATURE:
                     hand_label = 'FullHouse'
+                else:
+                    assert False
 
         poker_hands[hand_label]+=1
         print_hand(hand, txt=hand_label, flag=DEBUG)
