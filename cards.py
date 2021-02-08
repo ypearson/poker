@@ -81,23 +81,29 @@ def is_hand_same_suit(hand):
 def is_hand_sequential(hand):
     ret = True
     hand = sort_cards(hand)
-    has_ace = True if hand[0]['card_value'] =='ACE' else False
-    card = hand[0]['order']
-    for i in range(1,len(hand)):
-        if not has_ace:
+    if hand[0]['card_value'] =='ACE':
+        has_ace = True
+        card = hand[1]['order']
+    else:
+        has_ace = False
+        card = hand[0]['order']
+
+    if not has_ace:
+        for i in range(1,len(hand)):
             if card + 1 == hand[i]['order']:
                 card = hand[i]['order']
             else:
                 ret = False
                 break
-        else:
+    else:
+        for i in range(2, len(hand)):
             if card + 1 == hand[i]['order']:
-                card = hand[i]['order']
-            elif hand[i]['card_value']  == 'TEN':
                 card = hand[i]['order']
             else:
                 ret = False
                 break
+        if hand[1]['card_value'] != 'TWO' and hand[1]['card_value'] != 'TEN':
+            ret = False
     return ret
 
 def group_cards(hand):
